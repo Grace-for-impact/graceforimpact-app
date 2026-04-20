@@ -123,6 +123,12 @@ const menuData: Menu[] = [
         path: "/studentambassador",
         newTab: false,
       },
+      {
+        id: 37,
+        title: "Job Placement",
+        path: "/job-placement",
+        newTab: false,
+      },
     ],
   },
   // {
