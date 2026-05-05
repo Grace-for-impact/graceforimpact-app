@@ -1,11 +1,9 @@
 "use client";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
 
 const ToasterContext = () => {
   return (
-    <div>
-      <Toaster position="top-center" reverseOrder={false} />
-    </div>
+    <Toaster position="top-right" richColors closeButton />
   );
 };
 

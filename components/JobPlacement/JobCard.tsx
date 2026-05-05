@@ -5,6 +5,7 @@ import { FaLocationArrow, FaClock } from "react-icons/fa";
 import Link from "next/link";
 
 interface JobCardProps {
+  _id: string;
   title: string;
   location: string;
   type: string;
@@ -13,6 +14,7 @@ interface JobCardProps {
 }
 
 const JobCard: React.FC<JobCardProps> = ({
+  _id,
   title,
   location,
   type,
@@ -45,7 +47,7 @@ const JobCard: React.FC<JobCardProps> = ({
       </p>
 
       <Link 
-        href={`/job-placement/apply?job=${encodeURIComponent(title)}`}
+        href={`/job-placement/apply?id=${_id}&job=${encodeURIComponent(title)}`}
         className="w-full py-3 bg-purple text-white font-bold rounded-lg hover:bg-black transition-colors duration-300 shadow-lg text-center"
       >
         Apply Now

@@ -8,6 +8,7 @@ import JobHero from "@/components/JobPlacement/JobHero";
 const ApplicationPageContent = () => {
   const searchParams = useSearchParams();
   const jobTitle = searchParams.get("job") || "";
+  const jobId = searchParams.get("id") || "";
 
   return (
     <main>
@@ -19,7 +20,7 @@ const ApplicationPageContent = () => {
           </p>
         </div>
       </div>
-      <ApplicationForm jobTitle={jobTitle} />
+      <ApplicationForm jobTitle={jobTitle} jobId={jobId} />
     </main>
   );
 };

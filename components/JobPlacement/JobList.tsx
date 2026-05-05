@@ -1,44 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import JobCard from "./JobCard";
-
-const mockJobs = [
-  {
-    id: 1,
-    title: "Project Coordinator (Health)",
-    location: "Lagos, Nigeria",
-    type: "Full-time",
-    category: "Health",
-    description: "Coordinate healthcare outreach programs and ensure effective delivery of medical services to underserved communities.",
-  },
-  {
-    id: 2,
-    title: "Educational Field Officer",
-    location: "Nairobi, Kenya",
-    type: "Contract",
-    category: "Education",
-    description: "Support local schools with resource allocation and teacher training programs under the GFI excellence initiative.",
-  },
-  {
-    id: 3,
-    title: "Sustainable Agriculture Specialist",
-    location: "Accra, Ghana",
-    type: "Full-time",
-    category: "Agriculture",
-    description: "Lead community training on sustainable farming techniques and resource management to improve food security.",
-  },
-  {
-    id: 4,
-    title: "Administrative Assistant",
-    location: "Dallas, Texas",
-    type: "Part-time",
-    category: "Admin",
-    description: "Provide administrative support to the GFI headquarters team, managing communications and documentation.",
-  },
-];
+import { Loader2 } from "lucide-react";
 
 const JobList = () => {
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        // Fetch only active jobs for Grace For Impact
+        const response = await fetch(
+          "http://localhost:5000/api/jobs?company=Grace For Impact&status=Active"
+        );
+        if (!response.ok) throw new Error("Failed to fetch jobs");
+        const data = await response.json();
+        setJobs(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
   return (
     <section className="py-16 md:py-24 bg-alabaster">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,11 +42,25 @@ const JobList = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {mockJobs.map((job) => (
-            <JobCard key={job.id} {...job} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-10 w-10 text-purple animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 text-red-500 font-bold">
+            {error}
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 font-medium">
+            No open positions at the moment. Please check back later.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            {jobs.map((job) => (
+              <JobCard key={job._id} {...job} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

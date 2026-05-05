@@ -1,176 +1,478 @@
 "use client";
 
 import React, { useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
+import { 
+  User, 
+  GraduationCap, 
+  Briefcase, 
+  FileText, 
+  Plus, 
+  Trash2,
+  Loader2,
+  Upload,
+  X
+} from "lucide-react";
 
 interface ApplicationFormProps {
   jobTitle?: string;
+  jobId?: string;
 }
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    linkedin: "",
-    message: "",
-  });
+interface EducationEntry {
+  school: string;
+  startDate: string;
+  endDate: string;
+  qualification: string;
+  grade: string;
+}
+
+interface ExperienceEntry {
+  company: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) => {
+  const [activeStep, setActiveStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const [formData, setFormData] = useState({
+    personalInfo: {
+      fullName: "",
+      email: "",
+      phone: "",
+      address: "",
+      dob: "",
+      lga: "",
+    },
+    education: [
+      { school: "", startDate: "", endDate: "", qualification: "", grade: "" } as EducationEntry
+    ],
+    experience: [
+      { company: "", role: "", startDate: "", endDate: "", description: "" } as ExperienceEntry
+    ],
+    coverLetter: "",
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+      setFile(selectedFile);
     }
+  };
+
+  const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, [name]: value }
+    }));
+  };
+
+  const handleEducationChange = (index: number, field: keyof EducationEntry, value: string) => {
+    const updated = [...formData.education];
+    updated[index][field] = value;
+    setFormData(prev => ({ ...prev, education: updated }));
+  };
+
+  const handleExperienceChange = (index: number, field: keyof ExperienceEntry, value: string) => {
+    const updated = [...formData.experience];
+    updated[index][field] = value;
+    setFormData(prev => ({ ...prev, experience: updated }));
+  };
+
+  const addEducation = () => {
+    setFormData(prev => ({
+      ...prev,
+      education: [...prev.education, { school: "", startDate: "", endDate: "", qualification: "", grade: "" }]
+    }));
+  };
+
+  const removeEducation = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      education: prev.education.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addExperience = () => {
+    setFormData(prev => ({
+      ...prev,
+      experience: [...prev.experience, { company: "", role: "", startDate: "", endDate: "", description: "" }]
+    }));
+  };
+
+  const removeExperience = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      experience: prev.experience.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real implementation, we would use FormData to send fields and the file to an API
-    console.log("Submitting:", { ...formData, fileName: file?.name });
-    
-    toast.success("Application submitted successfully!");
-    // Reset form
-    setFormData({ name: "", email: "", phone: "", linkedin: "", message: "" });
-    setFile(null);
+    if (activeStep < 4) {
+      setActiveStep(prev => prev + 1);
+      window.scrollTo({ top: 300, behavior: "smooth" });
+      return;
+    }
+
+    if (!file) {
+      toast.error("Please upload your CV/Resume");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append("resume", file);
+      
+      // We send the rest of the data as a JSON string under a 'data' field
+      formDataToSubmit.append("data", JSON.stringify({
+        ...formData,
+        jobId
+      }));
+
+      const response = await fetch("http://localhost:5000/api/applications", {
+        method: "POST",
+        body: formDataToSubmit,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit application");
+      }
+
+      toast.success("Application submitted successfully!");
+      setTimeout(() => {
+        window.location.href = "/job-placement";
+      }, 2000);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const steps = [
+    { id: 1, title: "Personal", icon: User },
+    { id: 2, title: "Education", icon: GraduationCap },
+    { id: 3, title: "Experience", icon: Briefcase },
+    { id: 4, title: "Submit", icon: FileText },
+  ];
 
   return (
     <section className="py-16 md:py-24 bg-alabaster">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-solid-8 p-8 md:p-12">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-bold text-black mb-4">
-              Apply for {jobTitle || "our open positions"}
-            </h2>
-            <p className="text-gray-600">
-              Please fill out the form below and upload your latest CV/Resume. 
-              Our team will review your application and get back to you soon.
-            </p>
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-solid-8 overflow-hidden">
+          {/* Progress Header */}
+          <div className="bg-purple p-6 text-white">
+            <div className="flex justify-between items-center max-w-md mx-auto">
+              {steps.map((step) => (
+                <div key={step.id} className="flex flex-col items-center gap-2">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-all ${activeStep >= step.id ? 'bg-white text-purple' : 'bg-white/20 text-white/50 border border-white/20'}`}>
+                    <step.icon size={16} />
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${activeStep >= step.id ? 'text-white' : 'text-white/40'}`}>
+                    {step.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-all"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="john@example.com"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-all"
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+1 (234) 567-890"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-all"
-                />
-              </div>
-
-              {/* LinkedIn */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  LinkedIn Profile URL
-                </label>
-                <input
-                  type="url"
-                  name="linkedin"
-                  value={formData.linkedin}
-                  onChange={handleInputChange}
-                  placeholder="https://linkedin.com/in/johndoe"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-all"
-                />
-              </div>
+          <div className="p-8 md:p-12">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-black mb-2">
+                Apply for {jobTitle || "Vacancy"}
+              </h2>
+              <p className="text-gray-500 text-sm">Step {activeStep} of 4: {steps[activeStep-1].title}</p>
             </div>
 
-            {/* Resume Upload */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Upload CV/Resume * (PDF, DOCX)
-              </label>
-              <div className="relative group">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  required
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${file ? 'border-green bg-green/5' : 'border-gray-300 group-hover:border-purple bg-gray-50'}`}>
-                  {file ? (
-                    <div className="text-green font-medium">
-                      Selected: {file.name}
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {activeStep === 1 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Full Name</label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        required
+                        value={formData.personalInfo.fullName}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
                     </div>
-                  ) : (
-                    <div className="text-gray-500">
-                      <p className="mb-2">Click to upload or drag and drop</p>
-                      <p className="text-xs">PDF, DOCX up to 10MB</p>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.personalInfo.email}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
                     </div>
-                  )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Date of Birth</label>
+                      <input
+                        type="date"
+                        name="dob"
+                        required
+                        value={formData.personalInfo.dob}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">LGA</label>
+                      <input
+                        type="text"
+                        name="lga"
+                        required
+                        value={formData.personalInfo.lga}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        required
+                        value={formData.personalInfo.phone}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Residential Address</label>
+                      <input
+                        type="text"
+                        name="address"
+                        required
+                        value={formData.personalInfo.address}
+                        onChange={handlePersonalChange}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium"
+                      />
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {activeStep === 2 && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                  {formData.education.map((edu, index) => (
+                    <div key={index} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 relative group">
+                      <div className="flex justify-between items-center mb-6">
+                        <span className="text-[10px] font-black text-purple uppercase tracking-[0.2em]">Institution #{index + 1}</span>
+                        {formData.education.length > 1 && (
+                          <button type="button" onClick={() => removeEducation(index)} className="text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <input
+                          placeholder="Name of Institution"
+                          required
+                          value={edu.school}
+                          onChange={(e) => handleEducationChange(index, "school", e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="date"
+                            required
+                            value={edu.startDate}
+                            onChange={(e) => handleEducationChange(index, "startDate", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                          <input
+                            type="date"
+                            required
+                            value={edu.endDate}
+                            onChange={(e) => handleEducationChange(index, "endDate", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            placeholder="Qualification (e.g. B.Sc)"
+                            required
+                            value={edu.qualification}
+                            onChange={(e) => handleEducationChange(index, "qualification", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                          <input
+                            placeholder="Grade (e.g. 2:1)"
+                            required
+                            value={edu.grade}
+                            onChange={(e) => handleEducationChange(index, "grade", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button 
+                    type="button"
+                    onClick={addEducation}
+                    className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest hover:border-purple hover:text-purple transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={16} /> Add More Education
+                  </button>
+                </div>
+              )}
+
+              {activeStep === 3 && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                  {formData.experience.map((exp, index) => (
+                    <div key={index} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 relative group">
+                      <div className="flex justify-between items-center mb-6">
+                        <span className="text-[10px] font-black text-orange uppercase tracking-[0.2em]">Work Experience #{index + 1}</span>
+                        {formData.experience.length > 1 && (
+                          <button type="button" onClick={() => removeExperience(index)} className="text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            placeholder="Company Name"
+                            required
+                            value={exp.company}
+                            onChange={(e) => handleExperienceChange(index, "company", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                          <input
+                            placeholder="Job Title"
+                            required
+                            value={exp.role}
+                            onChange={(e) => handleExperienceChange(index, "role", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="date"
+                            required
+                            value={exp.startDate}
+                            onChange={(e) => handleExperienceChange(index, "startDate", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                          />
+                          <input
+                            type="date"
+                            value={exp.endDate}
+                            onChange={(e) => handleExperienceChange(index, "endDate", e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium"
+                            placeholder="End Date (Leave blank if current)"
+                          />
+                        </div>
+                        <textarea
+                          placeholder="Description of duties and accomplishments..."
+                          required
+                          value={exp.description}
+                          onChange={(e) => handleExperienceChange(index, "description", e.target.value)}
+                          rows={3}
+                          className="w-full px-4 py-3 rounded-xl border border-white focus:border-purple outline-none shadow-sm font-medium resize-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <button 
+                    type="button"
+                    onClick={addExperience}
+                    className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest hover:border-orange hover:text-orange transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={16} /> Add More Experience
+                  </button>
+                </div>
+              )}
+
+              {activeStep === 4 && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">Cover Letter / Personal Statement</label>
+                    <textarea
+                      required
+                      value={formData.coverLetter}
+                      onChange={(e) => setFormData(prev => ({ ...prev, coverLetter: e.target.value }))}
+                      rows={6}
+                      placeholder="Why do you want to join Grace For Impact?"
+                      className="w-full px-6 py-4 rounded-2xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-purple focus:ring-4 focus:ring-purple/5 outline-none transition-all font-medium resize-none shadow-inner"
+                    />
+                  </div>
+
+                  <div className="p-10 border-2 border-dashed border-gray-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 hover:border-purple transition-all group bg-gray-50/50 relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="h-16 w-16 bg-purple/10 rounded-2xl flex items-center justify-center text-purple group-hover:scale-110 transition-transform">
+                      <Upload size={32} />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-black">
+                        {file ? file.name : "Upload your CV/Resume"}
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1 font-medium">PDF or Word document (Max 5MB)</p>
+                    </div>
+                    <div className="flex gap-2">
+                       <div className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm">
+                        {file ? "Change File" : "Select File"}
+                      </div>
+                      {file && (
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                          className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-8 border-t border-gray-100 mt-12">
+                <button
+                  type="button"
+                  onClick={() => activeStep > 1 && setActiveStep(prev => prev - 1)}
+                  className={`px-8 py-4 text-gray-400 font-bold text-xs uppercase tracking-widest transition-all ${activeStep === 1 ? 'opacity-0 pointer-events-none' : 'hover:text-black'}`}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-12 py-4 bg-purple text-white font-bold rounded-xl hover:bg-black transition-all shadow-lg shadow-purple/20 flex items-center gap-3"
+                >
+                  {loading ? <Loader2 size={20} className="animate-spin" /> : (activeStep === 4 ? <Upload size={20} /> : null)}
+                  {activeStep < 4 ? "Continue" : (loading ? "Submitting..." : "Submit Application")}
+                </button>
               </div>
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Cover Letter / Additional Message
-              </label>
-              <textarea
-                name="message"
-                rows={5}
-                value={formData.message}
-                onChange={handleInputChange}
-                placeholder="Tell us why you are a great fit for GFI..."
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-all resize-none"
-              ></textarea>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-4 bg-purple text-white font-bold rounded-lg hover:bg-black shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-            >
-              Submit Application
-            </button>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
     </section>
