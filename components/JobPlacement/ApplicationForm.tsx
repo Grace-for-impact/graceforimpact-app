@@ -132,18 +132,38 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
 
     setLoading(true);
     try {
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append("resume", file);
-      
-      // We send the rest of the data as a JSON string under a 'data' field
-      formDataToSubmit.append("data", JSON.stringify({
-        ...formData,
-        jobId
-      }));
+      // 1. Upload CV to Cloudinary directly from frontend
+      const cloudinaryData = new FormData();
+      cloudinaryData.append("file", file);
+      cloudinaryData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "gfi_uploads");
+      cloudinaryData.append("folder", "gfi_applications");
 
-      const response = await fetch("http://localhost:5000/api/applications", {
+      const cloudinaryRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/raw/upload`,
+        {
+          method: "POST",
+          body: cloudinaryData,
+        }
+      );
+
+      if (!cloudinaryRes.ok) {
+        throw new Error("Failed to upload CV to cloud storage. Please try again.");
+      }
+
+      const cloudinaryResult = await cloudinaryRes.json();
+      const resumeUrl = cloudinaryResult.secure_url;
+
+      // 2. Submit the application to the backend with the Cloudinary URL
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/applications`, {
         method: "POST",
-        body: formDataToSubmit,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          jobId,
+          resumeUrl, // Send the URL returned from Cloudinary
+        }),
       });
 
       if (!response.ok) {

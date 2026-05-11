@@ -14,7 +14,7 @@ const JobList = () => {
       try {
         // Fetch only active jobs for Grace For Impact
         const response = await fetch(
-          "http://localhost:5000/api/jobs?company=Grace For Impact&status=Active"
+          `${process.env.NEXT_PUBLIC_API_URL}/jobs?company=Grace For Impact&status=Active`
         );
         if (!response.ok) throw new Error("Failed to fetch jobs");
         const data = await response.json();
