@@ -139,7 +139,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
       cloudinaryData.append("folder", "gfi_applications");
 
       const cloudinaryRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/raw/upload`,
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
         {
           method: "POST",
           body: cloudinaryData,
