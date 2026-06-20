@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { 
-  User, 
-  GraduationCap, 
-  Briefcase, 
-  FileText, 
-  Plus, 
+import {
+  User,
+  GraduationCap,
+  Briefcase,
+  FileText,
+  Plus,
   Trash2,
   Loader2,
   Upload,
@@ -214,7 +214,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
               <h2 className="text-2xl font-bold text-black mb-2">
                 Apply for {jobTitle || "Vacancy"}
               </h2>
-              <p className="text-gray-500 text-sm">Step {activeStep} of 4: {steps[activeStep-1].title}</p>
+              <p className="text-gray-500 text-sm">Step {activeStep} of 4: {steps[activeStep - 1].title}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -350,7 +350,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
                       </div>
                     </div>
                   ))}
-                  <button 
+                  <button
                     type="button"
                     onClick={addEducation}
                     className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest hover:border-purple hover:text-purple transition-all flex items-center justify-center gap-2"
@@ -416,7 +416,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
                       </div>
                     </div>
                   ))}
-                  <button 
+                  <button
                     type="button"
                     onClick={addExperience}
                     className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-xs uppercase tracking-widest hover:border-orange hover:text-orange transition-all flex items-center justify-center gap-2"
@@ -457,12 +457,12 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ jobTitle, jobId }) =>
                       <p className="text-sm text-gray-400 mt-1 font-medium">PDF or Word document (Max 5MB)</p>
                     </div>
                     <div className="flex gap-2">
-                       <div className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm">
+                      <div className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm">
                         {file ? "Change File" : "Select File"}
                       </div>
                       {file && (
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); setFile(null); }}
                           className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all"
                         >
